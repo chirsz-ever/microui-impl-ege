@@ -2,8 +2,9 @@
 #define RENDERER_H
 
 #include "microui.h"
+#include "ege.h"
 
-void r_init(void);
+void r_init(int width, int height, int initmode=ege::INIT_ANIMATION);
 void r_end(void);
 
  int r_get_text_width(const char *text, int len);

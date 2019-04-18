@@ -4,6 +4,9 @@
 #include "microui.h"
 #include "examples.h"
 
+const int width = 800;
+const int height = 600;
+
 static int mu_key_map(int key) {
 	int res;
 	using namespace ege;
@@ -130,7 +133,7 @@ static void process_frame(mu_Context *ctx) {
 }
 
 int main(int argc, char **argv) {
-	r_init();
+	r_init(width, height);
 
 	/* init microui */
 	mu_Context ctx_c;

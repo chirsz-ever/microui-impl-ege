@@ -4,15 +4,12 @@
 #include "microui_impl_ege.h"
 #include "atlas.h"
 
-const int width = 800;
-const int height = 600;
-
 static ege::PIMAGE textures;
 static ege::PIMAGE src_rect;
 
-void r_init(void) {
-	// »æÍ¼»·¾³³õÊ¼»¯
-	ege::setinitmode(ege::INIT_ANIMATION);
+void r_init(int width, int height, int initmode) {
+	// ç»˜å›¾ç¯å¢ƒåˆå§‹åŒ–
+	ege::setinitmode(initmode);
 	ege::initgraph(width, height);
 	ege::setbkmode(TRANSPARENT);
 	ege::setfont(16, 0, "Gadugi", NULL);
@@ -79,7 +76,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	//ege::setcolor(EGERGB(color.r, color.g, color.b));
 	//ege::outtextxy(r_pos.x, r_pos.y, gbkbuf);
 
-	if (*text) { //¿í¶ÈÎª0Ê±bug
+	if (*text) { //å®½åº¦ä¸º0æ—¶bug
 		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
 		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK+1) : ege::BLACK);
 		ege::resize(src_rect, r_get_text_width(text, strlen(text)), r_get_text_height());
@@ -100,7 +97,7 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	const float dst_alpha = color.a / 255.0f;
 	const ege::color_t base_color = EGERGB(color.r, color.g, color.b);
 
-	// ÔÚsrc_rectÉÏ»æÖÆICON
+	// åœ¨src_rectä¸Šç»˜åˆ¶ICON
 	ege::resize(src_rect, tex_src.w, tex_src.h);
 	for (int y = 0; y < tex_src.h; ++y) {
 		const unsigned char* tex_pix = atlas_texture[tex_src.y + y] + tex_src.x;
