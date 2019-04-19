@@ -79,7 +79,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	if (*text) { //宽度为0时bug
 		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
 		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK+1) : ege::BLACK);
-		ege::resize(src_rect, r_get_text_width(text, strlen(text)), r_get_text_height());
+		ege::resize(src_rect, r_get_text_width(nullptr, text, strlen(text)), r_get_text_height(nullptr));
 		ege::setbkcolor_f(textbkcolor, src_rect);
 		ege::cleardevice(src_rect);
 		ege::setcolor(textcolor, src_rect);
@@ -119,7 +119,8 @@ void r_flush(void)
 static char* buf;
 static int buf_len = 0;
 
-int r_get_text_width(const char *text, int len) {
+int r_get_text_width(mu_Font font, const char *text, int len) {
+	if (len == -1) { len = strlen(text); }
 	if (buf_len < len + 1) {
 		buf = (char*)realloc(buf, len + 1);
 		buf_len = len + 1;
@@ -130,7 +131,7 @@ int r_get_text_width(const char *text, int len) {
 }
 
 
-int r_get_text_height() {
+int r_get_text_height(mu_Font font) {
 	return ege::textheight(' ');
 }
 
@@ -149,4 +150,107 @@ void r_end(void) {
 	free(buf);
 	ege::delimage(textures);
 	ege::closegraph();
+}
+
+int ege2mu_key_map(int key) {
+	int res;
+	using namespace ege;
+	switch (key)
+	{
+	case key_shift:
+	case key_shift_l:
+	case key_shift_r:
+		res = MU_KEY_SHIFT;
+		break;
+	case key_control:
+	case key_control_l:
+	case key_control_r:
+		res = MU_KEY_CTRL;
+		break;
+	case key_menu:
+	case key_menu_l:
+	case key_menu_r:
+		res = MU_KEY_ALT;
+		break;
+	case key_enter:
+		res = MU_KEY_RETURN;
+		break;
+	case key_back:
+		res = MU_KEY_BACKSPACE;
+		break;
+	default:
+		res = 0;
+	}
+	return res;
+}
+
+void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
+	if (mmsg.is_move()) {
+		mu_input_mousemove(ctx, mmsg.x, mmsg.y);
+	}
+	else if (mmsg.is_wheel()) {
+		mu_input_mousewheel(ctx, mmsg.wheel / 120);
+	}
+	else if (mmsg.is_left()) {
+		if (mmsg.is_down())
+			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+		else if (mmsg.is_up())
+			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+	}
+	else if (mmsg.is_right()) {
+		if (mmsg.is_down())
+			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+		else if (mmsg.is_up())
+			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+	}
+	else if (mmsg.is_mid()) {
+		if (mmsg.is_down())
+			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+		else if (mmsg.is_up())
+			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+	}
+}
+
+void loop_process_kbhit(mu_Context * ctx) {
+	static char cbuf[100] = " ";
+	static wchar_t wcbuf[50] = L" ";
+	int len = 0;
+
+	while (ege::kbmsg()) {
+		ege::key_msg kmsg = ege::getkey();
+		switch (kmsg.msg)
+		{
+		case ege::key_msg_char: {
+			switch (kmsg.key)
+			{
+			case '\n':
+			case '\r':
+			case '\b':
+			case '\t':
+				break;
+			default:
+				wcbuf[len++] = kmsg.key;
+			}
+			break;
+		}
+		case ege::key_msg_down: {
+			int c = ege2mu_key_map(kmsg.key);
+			if (c)
+				mu_input_keydown(ctx, c);
+			break;
+		}
+		case ege::key_msg_up: {
+			int c = ege2mu_key_map(kmsg.key);
+			if (c)
+				mu_input_keyup(ctx, c);
+			break;
+		}
+		}
+	}
+	if (len) {
+		size_t bytes = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, len, cbuf, 100, NULL, NULL);
+		if (bytes < 100)cbuf[bytes] = '\0';
+		mu_input_text(ctx, cbuf);
+	}
+
 }
