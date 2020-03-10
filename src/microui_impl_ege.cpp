@@ -2,7 +2,9 @@
 #include <assert.h>
 #include <cstdio>
 #include "microui_impl_ege.h"
+extern "C" {
 #include "atlas.h"
+}
 
 static ege::PIMAGE textures;
 static ege::PIMAGE src_rect;
@@ -100,7 +102,7 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	// 在src_rect上绘制ICON
 	ege::resize(src_rect, tex_src.w, tex_src.h);
 	for (int y = 0; y < tex_src.h; ++y) {
-		const unsigned char* tex_pix = atlas_texture[tex_src.y + y] + tex_src.x;
+		const unsigned char* tex_pix = atlas_texture + (tex_src.y + y) * ATLAS_WIDTH + tex_src.x;
 		for (int x = 0; x < tex_src.w; ++x) {
 			const unsigned char alpha = *tex_pix * dst_alpha;
 			ege::putpixel_f(x, y, EGECOLORA(base_color, alpha), src_rect);
@@ -189,7 +191,7 @@ void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
 		mu_input_mousemove(ctx, mmsg.x, mmsg.y);
 	}
 	else if (mmsg.is_wheel()) {
-		mu_input_mousewheel(ctx, mmsg.wheel / 120);
+		mu_input_scroll(ctx, 0, -mmsg.wheel / 10);
 	}
 	else if (mmsg.is_left()) {
 		if (mmsg.is_down())
