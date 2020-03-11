@@ -59,7 +59,7 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 
 static char gbkbuf[128 * 3];
 
-static char* utf82gbk(const char u8str[], int len, char dest[], size_t bufsize) {
+static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
 	static wchar_t wcbuf[512];
 	if (len < 0)
 		len = strlen(u8str);
@@ -72,7 +72,7 @@ static char* utf82gbk(const char u8str[], int len, char dest[], size_t bufsize) 
 
 void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(pos.x, pos.y);
-	utf82gbk(text, -1, gbkbuf, sizeof(gbkbuf));
+	utf82ansi(text, -1, gbkbuf, sizeof(gbkbuf));
 	//ege::setcolor(EGERGB(color.r, color.g, color.b));
 	//ege::outtextxy(r_pos.x, r_pos.y, gbkbuf);
 
@@ -127,7 +127,7 @@ int r_get_text_width(mu_Font font, const char *text, int len) {
 	}
 	strncpy(buf, text, len);
 	buf[len] = '\0';
-	return ege::textwidth(utf82gbk(buf, len, gbkbuf, sizeof(gbkbuf)));
+	return ege::textwidth(utf82ansi(buf, len, gbkbuf, sizeof(gbkbuf)));
 }
 
 
@@ -211,10 +211,23 @@ void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
 	}
 }
 
+const size_t INPUTBUFSIZE = 128;
+
+static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
+	static wchar_t wcbuf[INPUTBUFSIZE];
+	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
+	wcbuf[wclen] = '\0';
+	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
+	dest[clen] = '\0';
+	return dest;
+}
+
 void loop_process_kbhit(mu_Context * ctx) {
-	static char cbuf[100] = " ";
-	static wchar_t wcbuf[50] = L" ";
+	static char cbuf[INPUTBUFSIZE * 3] = " ";
+	static wchar_t wcbuf[INPUTBUFSIZE] = L" ";
+	static char mbcsbuf[INPUTBUFSIZE * 2] = " ";
 	int len = 0;
+	bool is_unicode_win = IsWindowUnicode(ege::getHWnd());
 
 	while (ege::kbmsg()) {
 		ege::key_msg kmsg = ege::getkey();
@@ -229,7 +242,11 @@ void loop_process_kbhit(mu_Context * ctx) {
 			case '\t':
 				break;
 			default:
-				wcbuf[len++] = kmsg.key;
+				if (is_unicode_win) {
+					wcbuf[len++] = kmsg.key;
+				} else {
+					mbcsbuf[len++] = kmsg.key;
+				}
 			}
 			break;
 		}
@@ -248,8 +265,15 @@ void loop_process_kbhit(mu_Context * ctx) {
 		}
 	}
 	if (len) {
-		size_t bytes = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, len, cbuf, 100, NULL, NULL);
-		if (bytes < 100)cbuf[bytes] = '\0';
+		if (is_unicode_win) {
+			size_t bytes = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, len, cbuf, INPUTBUFSIZE * 3, NULL, NULL);
+			if (bytes < INPUTBUFSIZE * 3) {
+				cbuf[bytes] = '\0';
+			}
+		} else {
+			mbcsbuf[len] = '\0';
+			ansi2utf8(mbcsbuf, -1, cbuf, INPUTBUFSIZE * 3);
+		}
 		mu_input_text(ctx, cbuf);
 	}
 
