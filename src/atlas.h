@@ -7,6 +7,10 @@
  * and functions defined in atlas.c.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum { ATLAS_WHITE = MU_ICON_MAX, ATLAS_FONT };
 enum { ATLAS_WIDTH = 128, ATLAS_HEIGHT = 128 };
 
@@ -15,5 +19,9 @@ extern const mu_Rect atlas[];
 
 int atlas_text_width(mu_Font font, const char *text, int len);
 int atlas_text_height(mu_Font font);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,10 +1,8 @@
 
 #include <ege.h>
 #include "microui_impl_ege.h"
-extern "C" {
 #include "microui.h"
 #include "microui_demo.h"
-}
 
 const int width = 800;
 const int height = 600;

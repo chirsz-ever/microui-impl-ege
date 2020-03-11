@@ -1,9 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-extern "C" {
 #include "microui.h"
-}
 #include "ege.h"
 
 void r_init(int width, int height, int initmode=ege::INIT_ANIMATION);

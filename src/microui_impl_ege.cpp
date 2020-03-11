@@ -2,9 +2,7 @@
 #include <assert.h>
 #include <cstdio>
 #include "microui_impl_ege.h"
-extern "C" {
 #include "atlas.h"
-}
 
 static ege::PIMAGE textures;
 static ege::PIMAGE src_rect;
