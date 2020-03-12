@@ -11,26 +11,26 @@ void microui_impl_ege_init(mu_Context *ctx) {
 
 	// 字体设置
 	setfont(
-		16,
-		0,
-		"Gadugi",
-		0,
-		0,
-		0,
-		false,
-		false,
-		false,
-		DEFAULT_CHARSET,
-		OUT_DEFAULT_PRECIS,
-		CLIP_DEFAULT_PRECIS,
-		NONANTIALIASED_QUALITY,
-		DEFAULT_PITCH,
-		src_rect
+	    16,
+	    0,
+	    "Gadugi",
+	    0,
+	    0,
+	    0,
+	    false,
+	    false,
+	    false,
+	    DEFAULT_CHARSET,
+	    OUT_DEFAULT_PRECIS,
+	    CLIP_DEFAULT_PRECIS,
+	    NONANTIALIASED_QUALITY,
+	    DEFAULT_PITCH,
+	    src_rect
 	);
 	ctx->text_width = r_get_text_width;
 	ctx->text_height = r_get_text_height;
 
-	ege::setbkmode(TRANSPARENT,src_rect);
+	ege::setbkmode(TRANSPARENT, src_rect);
 	ege::setfontbkcolor(ege::BLACK, src_rect);
 
 	//ege::getimage(textures, "IMAGE", "IDR_IMAGE1");
@@ -73,7 +73,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 
 	if (*text) { //宽度为0时bug
 		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
-		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK+1) : ege::BLACK);
+		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK + 1) : ege::BLACK);
 		ege::resize(src_rect, r_get_text_width(nullptr, text, strlen(text)), r_get_text_height(nullptr));
 		ege::setbkcolor_f(textbkcolor, src_rect);
 		ege::cleardevice(src_rect);
@@ -85,7 +85,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 }
 
 void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
-	const mu_Vec2 r_pos = mu_vec2(rect.x,rect.y);
+	const mu_Vec2 r_pos = mu_vec2(rect.x, rect.y);
 	const mu_Rect tex_src = atlas[id];
 	const int px = r_pos.x + (rect.w - tex_src.w) / 2;
 	const int py = r_pos.y + (rect.h - tex_src.h) / 2;
@@ -102,8 +102,8 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 			++tex_pix;
 		}
 	}
-	
-	ege::putimage_withalpha(NULL,src_rect,px, py);
+
+	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
 void r_flush(void)
