@@ -4,19 +4,12 @@
 #include "microui_impl_ege.h"
 #include "atlas.h"
 
-static ege::PIMAGE textures;
 static ege::PIMAGE src_rect;
 
-void r_init(int width, int height, int initmode) {
-	// 绘图环境初始化
-	ege::setinitmode(initmode);
-	ege::initgraph(width, height);
-	ege::setbkmode(TRANSPARENT);
-	ege::setfont(16, 0, "Gadugi", NULL);
-
-	textures = ege::newimage();
+void microui_impl_ege_init(mu_Context *ctx) {
 	src_rect = ege::newimage();
-	//ege::setfont(16, 0, "Gadugi",src_rect);
+
+	// 字体设置
 	setfont(
 		16,
 		0,
@@ -34,6 +27,8 @@ void r_init(int width, int height, int initmode) {
 		DEFAULT_PITCH,
 		src_rect
 	);
+	ctx->text_width = r_get_text_width;
+	ctx->text_height = r_get_text_height;
 
 	ege::setbkmode(TRANSPARENT,src_rect);
 	ege::setfontbkcolor(ege::BLACK, src_rect);
@@ -127,12 +122,12 @@ int r_get_text_width(mu_Font font, const char *text, int len) {
 	}
 	strncpy(buf, text, len);
 	buf[len] = '\0';
-	return ege::textwidth(utf82ansi(buf, len, gbkbuf, sizeof(gbkbuf)));
+	return ege::textwidth(utf82ansi(buf, len, gbkbuf, sizeof(gbkbuf)), src_rect);
 }
 
 
 int r_get_text_height(mu_Font font) {
-	return ege::textheight(' ');
+	return ege::textheight(' ', src_rect);
 }
 
 
@@ -146,9 +141,9 @@ void r_clear(mu_Color clr) {
 	ege::cleardevice();
 }
 
-void r_end(void) {
+void microui_impl_ege_shutdown() {
 	free(buf);
-	ege::delimage(textures);
+	ege::delimage(src_rect);
 	ege::closegraph();
 }
 

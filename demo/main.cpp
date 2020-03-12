@@ -23,14 +23,18 @@ static void process_frame(mu_Context *ctx) {
 }
 
 int main(int argc, char **argv) {
-	r_init(width, height);
+	// EGE 初始化
+	ege::setinitmode(ege::INIT_ANIMATION);
+	ege::initgraph(width, height);
+	ege::setbkmode(TRANSPARENT);
 
-	/* init microui */
+	// 初始化 microui
 	mu_Context ctx_c;
 	mu_Context *ctx = &ctx_c;
 	mu_init(ctx);
-	ctx->text_width = r_get_text_width;
-	ctx->text_height = r_get_text_height;
+
+	// 适配 EGE 平台
+	microui_impl_ege_init(ctx);
 
 	/* main loop */
 	while (ege::is_run()) {
@@ -55,7 +59,7 @@ int main(int argc, char **argv) {
 		r_flush();
 	}
 
-	r_end();
+	microui_impl_ege_shutdown();
 
 	return 0;
 }
