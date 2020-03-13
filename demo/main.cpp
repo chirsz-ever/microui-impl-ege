@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
 	}
 
 	microui_impl_ege_shutdown();
+	ege::closegraph();
 
 	return 0;
 }

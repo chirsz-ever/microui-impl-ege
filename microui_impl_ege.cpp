@@ -4,7 +4,41 @@
 #include "microui_impl_ege.h"
 #include "atlas.h"
 
+const size_t INPUTBUFSIZE = 128;
+
 static ege::PIMAGE src_rect;
+
+static char gbkbuf[INPUTBUFSIZE * 3];
+
+static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
+	static wchar_t wcbuf[INPUTBUFSIZE];
+	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
+	wcbuf[wclen] = '\0';
+	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
+	dest[clen] = '\0';
+	return dest;
+}
+
+static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
+	static wchar_t wcbuf[512];
+	if (len < 0)
+		len = strlen(u8str);
+	int wclen = ::MultiByteToWideChar(CP_UTF8, 0, u8str, len, wcbuf, 512);
+	wcbuf[wclen] = '\0';
+	int clen = ::WideCharToMultiByte(CP_ACP, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
+	dest[clen] = '\0';
+	return dest;
+}
+
+static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
+	if (len == -1) { len = strlen(text); }
+	return ege::textwidth(utf82ansi(text, len, gbkbuf, sizeof(gbkbuf)), src_rect);
+}
+
+
+static int microui_impl_ege_text_height(mu_Font font) {
+	return ege::textheight(' ', src_rect);
+}
 
 void microui_impl_ege_init(mu_Context *ctx) {
 	src_rect = ege::newimage();
@@ -27,8 +61,8 @@ void microui_impl_ege_init(mu_Context *ctx) {
 	    DEFAULT_PITCH,
 	    src_rect
 	);
-	ctx->text_width = r_get_text_width;
-	ctx->text_height = r_get_text_height;
+	ctx->text_width = microui_impl_ege_text_width;
+	ctx->text_height = microui_impl_ege_text_height;
 
 	ege::setbkmode(TRANSPARENT, src_rect);
 	ege::setfontbkcolor(ege::BLACK, src_rect);
@@ -52,19 +86,6 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 	ege::putimage_alphablend(NULL, src_rect, r_pos.x, r_pos.y, color.a);
 }
 
-static char gbkbuf[128 * 3];
-
-static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[512];
-	if (len < 0)
-		len = strlen(u8str);
-	int wclen = ::MultiByteToWideChar(CP_UTF8, 0, u8str, len, wcbuf, 512);
-	wcbuf[wclen] = '\0';
-	int clen = ::WideCharToMultiByte(CP_ACP, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
-	dest[clen] = '\0';
-	return dest;
-}
-
 void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(pos.x, pos.y);
 	utf82ansi(text, -1, gbkbuf, sizeof(gbkbuf));
@@ -74,7 +95,11 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	if (*text) { //宽度为0时bug
 		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
 		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK + 1) : ege::BLACK);
-		ege::resize(src_rect, r_get_text_width(nullptr, text, strlen(text)), r_get_text_height(nullptr));
+		ege::resize(
+		    src_rect,
+		    microui_impl_ege_text_width(nullptr, text, strlen(text)),
+		    microui_impl_ege_text_height(nullptr)
+		);
 		ege::setbkcolor_f(textbkcolor, src_rect);
 		ege::cleardevice(src_rect);
 		ege::setcolor(textcolor, src_rect);
@@ -106,34 +131,12 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
-static char* buf;
-static int buf_len = 0;
-
-int r_get_text_width(mu_Font font, const char *text, int len) {
-	if (len == -1) { len = strlen(text); }
-	if (buf_len < len + 1) {
-		buf = (char*)realloc(buf, len + 1);
-		buf_len = len + 1;
-	}
-	strncpy(buf, text, len);
-	buf[len] = '\0';
-	return ege::textwidth(utf82ansi(buf, len, gbkbuf, sizeof(gbkbuf)), src_rect);
-}
-
-
-int r_get_text_height(mu_Font font) {
-	return ege::textheight(' ', src_rect);
-}
-
-
 void r_set_clip_rect(mu_Rect rect) {
 	ege::setviewport(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
 
 void microui_impl_ege_shutdown() {
-	free(buf);
 	ege::delimage(src_rect);
-	ege::closegraph();
 }
 
 int ege2mu_key_map(int key) {
@@ -193,17 +196,6 @@ void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
 		else if (mmsg.is_up())
 			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
 	}
-}
-
-const size_t INPUTBUFSIZE = 128;
-
-static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[INPUTBUFSIZE];
-	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
-	wcbuf[wclen] = '\0';
-	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
-	dest[clen] = '\0';
-	return dest;
 }
 
 void loop_process_kbhit(mu_Context * ctx) {
