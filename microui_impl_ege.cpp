@@ -110,7 +110,7 @@ static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 }
 
 static void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
-	const mu_Vec2 r_pos = mu_vec2(rect.x, rect.y);
+	const mu_Vec2 r_pos = real_pos(rect.x, rect.y);
 	const mu_Rect tex_src = atlas[id];
 	const int px = r_pos.x + (rect.w - tex_src.w) / 2;
 	const int py = r_pos.y + (rect.h - tex_src.h) / 2;
