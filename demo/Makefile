@@ -7,7 +7,6 @@ EXE_SUFFIX=.exe
 
 SOURCES = main.cpp microui_demo.c 
 SOURCES += ../microui.c ../microui_impl_ege.cpp
-SOURCES += ../atlas.c
 
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 TARGET = demo${EXE_SUFFIX}
@@ -35,9 +34,8 @@ ${TARGET}: ${OBJS}
 main.o: main.cpp ../microui_impl_ege.h ../microui.h ../microui.h \
  microui_demo.h
 microui_impl_ege.o: ../microui_impl_ege.cpp ../microui_impl_ege.h \
- ../microui.h ../atlas.h
+ ../microui.h
 microui_demo.o: microui_demo.c ../microui.h microui_demo.h
-atlas.o: ../atlas.c ../microui.h ../atlas.h
 microui.o: ../microui.c ../microui.h
 
 .PRONY:clean all run depends
