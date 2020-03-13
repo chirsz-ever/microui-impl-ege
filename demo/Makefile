@@ -2,7 +2,7 @@ CXX=g++
 CC=gcc
 CXXFLAGS=-std=c++11 -I.. -Wall 
 CFLAGS=-std=c99 -I.. -Wall 
-LINK_FLAGS= -L. -lgraphics64 -lkernel32 -luser32 -lgdi32 -lole32 -loleaut32 -limm32 -lmsimg32 -luuid -mwindows
+LINK_FLAGS= -L.. -lgraphics64 -lkernel32 -luser32 -lgdi32 -lole32 -loleaut32 -limm32 -lmsimg32 -luuid -mwindows
 EXE_SUFFIX=.exe
 
 SOURCES = main.cpp microui_demo.c 
