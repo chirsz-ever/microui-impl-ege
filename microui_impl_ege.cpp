@@ -4,38 +4,67 @@
 #include "microui_impl_ege.h"
 #include "atlas.h"
 
-static ege::PIMAGE textures;
+const size_t INPUTBUFSIZE = 128;
+
 static ege::PIMAGE src_rect;
 
-void r_init(int width, int height, int initmode) {
-	// 绘图环境初始化
-	ege::setinitmode(initmode);
-	ege::initgraph(width, height);
-	ege::setbkmode(TRANSPARENT);
-	ege::setfont(16, 0, "Gadugi", NULL);
+static char gbkbuf[INPUTBUFSIZE * 3];
 
-	textures = ege::newimage();
+static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
+	static wchar_t wcbuf[INPUTBUFSIZE];
+	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
+	wcbuf[wclen] = '\0';
+	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
+	dest[clen] = '\0';
+	return dest;
+}
+
+static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
+	static wchar_t wcbuf[512];
+	if (len < 0)
+		len = strlen(u8str);
+	int wclen = ::MultiByteToWideChar(CP_UTF8, 0, u8str, len, wcbuf, 512);
+	wcbuf[wclen] = '\0';
+	int clen = ::WideCharToMultiByte(CP_ACP, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
+	dest[clen] = '\0';
+	return dest;
+}
+
+static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
+	if (len == -1) { len = strlen(text); }
+	return ege::textwidth(utf82ansi(text, len, gbkbuf, sizeof(gbkbuf)), src_rect);
+}
+
+
+static int microui_impl_ege_text_height(mu_Font font) {
+	return ege::textheight(' ', src_rect);
+}
+
+void microui_impl_ege_init(mu_Context *ctx) {
 	src_rect = ege::newimage();
-	//ege::setfont(16, 0, "Gadugi",src_rect);
-	setfont(
-		16,
-		0,
-		"Gadugi",
-		0,
-		0,
-		0,
-		false,
-		false,
-		false,
-		DEFAULT_CHARSET,
-		OUT_DEFAULT_PRECIS,
-		CLIP_DEFAULT_PRECIS,
-		NONANTIALIASED_QUALITY,
-		DEFAULT_PITCH,
-		src_rect
-	);
 
-	ege::setbkmode(TRANSPARENT,src_rect);
+	// 字体设置
+	setfont(
+	    16,
+	    0,
+	    "Gadugi",
+	    0,
+	    0,
+	    0,
+	    false,
+	    false,
+	    false,
+	    DEFAULT_CHARSET,
+	    OUT_DEFAULT_PRECIS,
+	    CLIP_DEFAULT_PRECIS,
+	    NONANTIALIASED_QUALITY,
+	    DEFAULT_PITCH,
+	    src_rect
+	);
+	ctx->text_width = microui_impl_ege_text_width;
+	ctx->text_height = microui_impl_ege_text_height;
+
+	ege::setbkmode(TRANSPARENT, src_rect);
 	ege::setfontbkcolor(ege::BLACK, src_rect);
 
 	//ege::getimage(textures, "IMAGE", "IDR_IMAGE1");
@@ -49,7 +78,7 @@ static mu_Vec2 real_pos(int px, int py) {
 	return mu_vec2(px - orgn_x, py - orgn_y);
 }
 
-void r_draw_rect(mu_Rect rect, mu_Color color) {
+static void r_draw_rect(mu_Rect rect, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(rect.x, rect.y);
 	ege::resize(src_rect, rect.w, rect.h);
 	ege::setbkcolor_f(EGERGB(color.r, color.g, color.b), src_rect);
@@ -57,20 +86,7 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 	ege::putimage_alphablend(NULL, src_rect, r_pos.x, r_pos.y, color.a);
 }
 
-static char gbkbuf[128 * 3];
-
-static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[512];
-	if (len < 0)
-		len = strlen(u8str);
-	int wclen = ::MultiByteToWideChar(CP_UTF8, 0, u8str, len, wcbuf, 512);
-	wcbuf[wclen] = '\0';
-	int clen = ::WideCharToMultiByte(CP_ACP, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
-	dest[clen] = '\0';
-	return dest;
-}
-
-void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
+static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(pos.x, pos.y);
 	utf82ansi(text, -1, gbkbuf, sizeof(gbkbuf));
 	//ege::setcolor(EGERGB(color.r, color.g, color.b));
@@ -78,8 +94,12 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 
 	if (*text) { //宽度为0时bug
 		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
-		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK+1) : ege::BLACK);
-		ege::resize(src_rect, r_get_text_width(nullptr, text, strlen(text)), r_get_text_height(nullptr));
+		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK + 1) : ege::BLACK);
+		ege::resize(
+		    src_rect,
+		    microui_impl_ege_text_width(nullptr, text, strlen(text)),
+		    microui_impl_ege_text_height(nullptr)
+		);
 		ege::setbkcolor_f(textbkcolor, src_rect);
 		ege::cleardevice(src_rect);
 		ege::setcolor(textcolor, src_rect);
@@ -89,8 +109,8 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	}
 }
 
-void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
-	const mu_Vec2 r_pos = mu_vec2(rect.x,rect.y);
+static void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
+	const mu_Vec2 r_pos = mu_vec2(rect.x, rect.y);
 	const mu_Rect tex_src = atlas[id];
 	const int px = r_pos.x + (rect.w - tex_src.w) / 2;
 	const int py = r_pos.y + (rect.h - tex_src.h) / 2;
@@ -107,52 +127,32 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 			++tex_pix;
 		}
 	}
-	
-	ege::putimage_withalpha(NULL,src_rect,px, py);
+
+	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
-void r_flush(void)
-{
-	ege::delay_ms(0);
-}
-
-static char* buf;
-static int buf_len = 0;
-
-int r_get_text_width(mu_Font font, const char *text, int len) {
-	if (len == -1) { len = strlen(text); }
-	if (buf_len < len + 1) {
-		buf = (char*)realloc(buf, len + 1);
-		buf_len = len + 1;
-	}
-	strncpy(buf, text, len);
-	buf[len] = '\0';
-	return ege::textwidth(utf82ansi(buf, len, gbkbuf, sizeof(gbkbuf)));
-}
-
-
-int r_get_text_height(mu_Font font) {
-	return ege::textheight(' ');
-}
-
-
-void r_set_clip_rect(mu_Rect rect) {
+static void r_set_clip_rect(mu_Rect rect) {
 	ege::setviewport(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
 
-
-void r_clear(mu_Color clr) {
-	ege::setbkcolor_f(EGERGBA(clr.r, clr.g, clr.b, clr.a));
-	ege::cleardevice();
+void microui_impl_ege_draw_data(mu_Context *ctx) {
+	mu_Command *cmd = NULL;
+	while (mu_next_command(ctx, &cmd)) {
+		switch (cmd->type) {
+		case MU_COMMAND_TEXT: r_draw_text(cmd->text.str, cmd->text.pos, cmd->text.color); break;
+		case MU_COMMAND_RECT: r_draw_rect(cmd->rect.rect, cmd->rect.color); break;
+		case MU_COMMAND_ICON: r_draw_icon(cmd->icon.id, cmd->icon.rect, cmd->icon.color); break;
+		case MU_COMMAND_CLIP: r_set_clip_rect(cmd->clip.rect); break;
+		}
+	}
 }
 
-void r_end(void) {
-	free(buf);
-	ege::delimage(textures);
-	ege::closegraph();
+
+void microui_impl_ege_shutdown() {
+	ege::delimage(src_rect);
 }
 
-int ege2mu_key_map(int key) {
+static int ege2mu_key_map(int key) {
 	int res;
 	using namespace ege;
 	switch (key)
@@ -184,45 +184,37 @@ int ege2mu_key_map(int key) {
 	return res;
 }
 
-void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
-	if (mmsg.is_move()) {
-		mu_input_mousemove(ctx, mmsg.x, mmsg.y);
-	}
-	else if (mmsg.is_wheel()) {
-		mu_input_scroll(ctx, 0, -mmsg.wheel / 10);
-	}
-	else if (mmsg.is_left()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
-	}
-	else if (mmsg.is_right()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
-	}
-	else if (mmsg.is_mid()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+static void microui_impl_ege_process_mouse_events(mu_Context *ctx) {
+	while (ege::mousemsg()) {
+		ege::mouse_msg mmsg = ege::getmouse();
+		if (mmsg.is_move()) {
+			mu_input_mousemove(ctx, mmsg.x, mmsg.y);
+		}
+		else if (mmsg.is_wheel()) {
+			mu_input_scroll(ctx, 0, -mmsg.wheel / 10);
+		}
+		else if (mmsg.is_left()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+		}
+		else if (mmsg.is_right()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+		}
+		else if (mmsg.is_mid()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+		}
 	}
 }
 
-const size_t INPUTBUFSIZE = 128;
-
-static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[INPUTBUFSIZE];
-	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
-	wcbuf[wclen] = '\0';
-	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
-	dest[clen] = '\0';
-	return dest;
-}
-
-void loop_process_kbhit(mu_Context * ctx) {
+static void microui_impl_ege_process_keyboard_events(mu_Context * ctx) {
 	static char cbuf[INPUTBUFSIZE * 3] = " ";
 	static wchar_t wcbuf[INPUTBUFSIZE] = L" ";
 	static char mbcsbuf[INPUTBUFSIZE * 2] = " ";
@@ -277,4 +269,9 @@ void loop_process_kbhit(mu_Context * ctx) {
 		mu_input_text(ctx, cbuf);
 	}
 
+}
+
+void microui_impl_ege_process_events(mu_Context *ctx) {
+	microui_impl_ege_process_mouse_events(ctx);
+	microui_impl_ege_process_keyboard_events(ctx);
 }
