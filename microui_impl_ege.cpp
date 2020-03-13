@@ -139,7 +139,7 @@ void microui_impl_ege_shutdown() {
 	ege::delimage(src_rect);
 }
 
-int ege2mu_key_map(int key) {
+static int ege2mu_key_map(int key) {
 	int res;
 	using namespace ege;
 	switch (key)
@@ -171,34 +171,37 @@ int ege2mu_key_map(int key) {
 	return res;
 }
 
-void ege2mu_input_mouse(mu_Context *ctx, ege::mouse_msg mmsg) {
-	if (mmsg.is_move()) {
-		mu_input_mousemove(ctx, mmsg.x, mmsg.y);
-	}
-	else if (mmsg.is_wheel()) {
-		mu_input_scroll(ctx, 0, -mmsg.wheel / 10);
-	}
-	else if (mmsg.is_left()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
-	}
-	else if (mmsg.is_right()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
-	}
-	else if (mmsg.is_mid()) {
-		if (mmsg.is_down())
-			mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
-		else if (mmsg.is_up())
-			mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+static void microui_impl_ege_process_mouse_events(mu_Context *ctx) {
+	while (ege::mousemsg()) {
+		ege::mouse_msg mmsg = ege::getmouse();
+		if (mmsg.is_move()) {
+			mu_input_mousemove(ctx, mmsg.x, mmsg.y);
+		}
+		else if (mmsg.is_wheel()) {
+			mu_input_scroll(ctx, 0, -mmsg.wheel / 10);
+		}
+		else if (mmsg.is_left()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_LEFT);
+		}
+		else if (mmsg.is_right()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_RIGHT);
+		}
+		else if (mmsg.is_mid()) {
+			if (mmsg.is_down())
+				mu_input_mousedown(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+			else if (mmsg.is_up())
+				mu_input_mouseup(ctx, mmsg.x, mmsg.y, MU_MOUSE_MIDDLE);
+		}
 	}
 }
 
-void loop_process_kbhit(mu_Context * ctx) {
+static void microui_impl_ege_process_keyboard_events(mu_Context * ctx) {
 	static char cbuf[INPUTBUFSIZE * 3] = " ";
 	static wchar_t wcbuf[INPUTBUFSIZE] = L" ";
 	static char mbcsbuf[INPUTBUFSIZE * 2] = " ";
@@ -253,4 +256,9 @@ void loop_process_kbhit(mu_Context * ctx) {
 		mu_input_text(ctx, cbuf);
 	}
 
+}
+
+void microui_impl_ege_process_events(mu_Context *ctx) {
+	microui_impl_ege_process_mouse_events(ctx);
+	microui_impl_ege_process_keyboard_events(ctx);
 }

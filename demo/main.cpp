@@ -7,13 +7,6 @@
 const int width = 800;
 const int height = 600;
 
-static void process_mouse_events(mu_Context *ctx) {
-	while (ege::mousemsg()) {
-		ege::mouse_msg mmsg = ege::getmouse();
-		ege2mu_input_mouse(ctx, mmsg);
-	}
-}
-
 static void process_frame(mu_Context *ctx) {
 	mu_begin(ctx);
 	test_window(ctx);
@@ -39,8 +32,7 @@ int main(int argc, char **argv) {
 	/* main loop */
 	while (ege::is_run()) {
 		/* handle events */
-		process_mouse_events(ctx);
-		loop_process_kbhit(ctx);
+		microui_impl_ege_process_events(ctx);
 
 		/* process frame */
 		process_frame(ctx);
