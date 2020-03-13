@@ -40,15 +40,8 @@ int main(int argc, char **argv) {
 		/* render */
 		ege::setbkcolor_f(EGERGBA((int)bg[0], (int)bg[1], (int)bg[2], (int)bg[3]));
 		ege::cleardevice();
-		mu_Command *cmd = NULL;
-		while (mu_next_command(ctx, &cmd)) {
-			switch (cmd->type) {
-			case MU_COMMAND_TEXT: r_draw_text(cmd->text.str, cmd->text.pos, cmd->text.color); break;
-			case MU_COMMAND_RECT: r_draw_rect(cmd->rect.rect, cmd->rect.color); break;
-			case MU_COMMAND_ICON: r_draw_icon(cmd->icon.id, cmd->icon.rect, cmd->icon.color); break;
-			case MU_COMMAND_CLIP: r_set_clip_rect(cmd->clip.rect); break;
-			}
-		}
+		microui_impl_ege_draw_data(ctx);
+
 		ege::delay_ms(0);
 	}
 

@@ -14,11 +14,8 @@ void microui_impl_ege_shutdown();
 // 鼠标输入的可通过 ctx 中相关成员获取
 void microui_impl_ege_process_events(mu_Context *ctx);
 
-void r_draw_rect(mu_Rect rect, mu_Color color);
-void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color);
-void r_draw_icon(int id, mu_Rect rect, mu_Color color);
-
-void r_set_clip_rect(mu_Rect rect);
+// 从 microui 读取指令，绘制 UI 界面
+void microui_impl_ege_draw_data(mu_Context *ctx);
 
 #endif
 

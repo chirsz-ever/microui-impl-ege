@@ -78,7 +78,7 @@ static mu_Vec2 real_pos(int px, int py) {
 	return mu_vec2(px - orgn_x, py - orgn_y);
 }
 
-void r_draw_rect(mu_Rect rect, mu_Color color) {
+static void r_draw_rect(mu_Rect rect, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(rect.x, rect.y);
 	ege::resize(src_rect, rect.w, rect.h);
 	ege::setbkcolor_f(EGERGB(color.r, color.g, color.b), src_rect);
@@ -86,7 +86,7 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 	ege::putimage_alphablend(NULL, src_rect, r_pos.x, r_pos.y, color.a);
 }
 
-void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
+static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(pos.x, pos.y);
 	utf82ansi(text, -1, gbkbuf, sizeof(gbkbuf));
 	//ege::setcolor(EGERGB(color.r, color.g, color.b));
@@ -109,7 +109,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	}
 }
 
-void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
+static void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	const mu_Vec2 r_pos = mu_vec2(rect.x, rect.y);
 	const mu_Rect tex_src = atlas[id];
 	const int px = r_pos.x + (rect.w - tex_src.w) / 2;
@@ -131,9 +131,22 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
-void r_set_clip_rect(mu_Rect rect) {
+static void r_set_clip_rect(mu_Rect rect) {
 	ege::setviewport(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
+
+void microui_impl_ege_draw_data(mu_Context *ctx) {
+	mu_Command *cmd = NULL;
+	while (mu_next_command(ctx, &cmd)) {
+		switch (cmd->type) {
+		case MU_COMMAND_TEXT: r_draw_text(cmd->text.str, cmd->text.pos, cmd->text.color); break;
+		case MU_COMMAND_RECT: r_draw_rect(cmd->rect.rect, cmd->rect.color); break;
+		case MU_COMMAND_ICON: r_draw_icon(cmd->icon.id, cmd->icon.rect, cmd->icon.color); break;
+		case MU_COMMAND_CLIP: r_set_clip_rect(cmd->clip.rect); break;
+		}
+	}
+}
+
 
 void microui_impl_ege_shutdown() {
 	ege::delimage(src_rect);
