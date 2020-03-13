@@ -46,7 +46,8 @@ int main(int argc, char **argv) {
 		process_frame(ctx);
 
 		/* render */
-		r_clear(mu_color(bg[0], bg[1], bg[2], 255));
+		ege::setbkcolor_f(EGERGBA((int)bg[0], (int)bg[1], (int)bg[2], (int)bg[3]));
+		ege::cleardevice();
 		mu_Command *cmd = NULL;
 		while (mu_next_command(ctx, &cmd)) {
 			switch (cmd->type) {
@@ -56,7 +57,7 @@ int main(int argc, char **argv) {
 			case MU_COMMAND_CLIP: r_set_clip_rect(cmd->clip.rect); break;
 			}
 		}
-		r_flush();
+		ege::delay_ms(0);
 	}
 
 	microui_impl_ege_shutdown();

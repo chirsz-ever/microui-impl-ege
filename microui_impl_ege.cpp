@@ -106,11 +106,6 @@ void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
-void r_flush(void)
-{
-	ege::delay_ms(0);
-}
-
 static char* buf;
 static int buf_len = 0;
 
@@ -133,12 +128,6 @@ int r_get_text_height(mu_Font font) {
 
 void r_set_clip_rect(mu_Rect rect) {
 	ege::setviewport(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
-}
-
-
-void r_clear(mu_Color clr) {
-	ege::setbkcolor_f(EGERGBA(clr.r, clr.g, clr.b, clr.a));
-	ege::cleardevice();
 }
 
 void microui_impl_ege_shutdown() {
