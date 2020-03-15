@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
 			switch (btn_last) {
 			case BTN_SQRT: {
 				disp = to_string(sqrt(stof(disp)));
-				status = INPUT_LHS;
+				status = DISP_ANS;
 				break;
 			}
 			case BTN_DEL: {
