@@ -209,7 +209,7 @@ static void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 static void r_set_clip_rect(mu_Rect rect) {
 	// EGE 的视图裁剪范围不包括最右列和最下行
 	// 见 https://xege.org/manual/api/env/setviewport.htm
-	ege::setviewport(rect.x, rect.y, rect.x + rect.w + 1, rect.y + rect.h + 1);
+	ege::setviewport(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
 
 void microui_impl_ege_draw_data(mu_Context *ctx) {
