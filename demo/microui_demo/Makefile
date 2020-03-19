@@ -3,8 +3,9 @@ CC         = gcc
 ROOT       = ../..
 CXXFLAGS   = -std=c++11 -I$(ROOT) -Wall 
 CFLAGS     = -std=c99 -I$(ROOT) -Wall 
-LINK_FLAGS = -L$(ROOT) -lgraphics64 -lkernel32 -luser32 -lgdi32 -lole32 -loleaut32 -limm32 -lmsimg32 -luuid -mwindows
+LINK_FLAGS = -lkernel32 -luser32 -lgdi32 -lole32 -loleaut32 -limm32 -lmsimg32 -luuid -mwindows
 EXE_SUFFIX = .exe
+EGE_LIB    = ../../libgraphics64.a
 
 SOURCES = main.cpp microui_demo.c 
 SOURCES += $(ROOT)/microui.c $(ROOT)/microui_impl_ege.cpp
@@ -14,7 +15,7 @@ TARGET = demo${EXE_SUFFIX}
 
 all: ${TARGET}
 
-${TARGET}: ${OBJS} ../../libgraphics64.a
+${TARGET}: ${OBJS} ${EGE_LIB}
 	${CXX} $^ -o $@ ${LINK_FLAGS}
 	@echo "build $@ successfully"
 
