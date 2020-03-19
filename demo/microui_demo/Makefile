@@ -14,7 +14,7 @@ TARGET = demo${EXE_SUFFIX}
 
 all: ${TARGET}
 
-${TARGET}: ${OBJS}
+${TARGET}: ${OBJS} ../../libgraphics64.a
 	${CXX} $^ -o $@ ${LINK_FLAGS}
 	@echo "build $@ successfully"
 
