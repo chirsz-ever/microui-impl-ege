@@ -81,8 +81,6 @@ const mu_Rect atlas[] = {
 
 const size_t INPUTBUFSIZE = 128;
 
-static ege::PIMAGE src_rect;
-
 static char gbkbuf[INPUTBUFSIZE * 3];
 
 static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
@@ -107,19 +105,18 @@ static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize)
 
 static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
 	if (len == -1) { len = strlen(text); }
-	return ege::textwidth(utf82ansi(text, len, gbkbuf, sizeof(gbkbuf)), src_rect);
+	return ege::textwidth(utf82ansi(text, len, gbkbuf, sizeof(gbkbuf)));
 }
 
 
 static int microui_impl_ege_text_height(mu_Font font) {
-	return ege::textheight(' ', src_rect);
+	return ege::textheight(' ');
 }
 
 void microui_impl_ege_init(mu_Context *ctx) {
-	src_rect = ege::newimage();
 
 	// 字体设置
-	setfont(
+	ege::setfont(
 	    16,
 	    0,
 	    "Gadugi",
@@ -133,18 +130,10 @@ void microui_impl_ege_init(mu_Context *ctx) {
 	    OUT_DEFAULT_PRECIS,
 	    CLIP_DEFAULT_PRECIS,
 	    NONANTIALIASED_QUALITY,
-	    DEFAULT_PITCH,
-	    src_rect
+	    DEFAULT_PITCH
 	);
 	ctx->text_width = microui_impl_ege_text_width;
 	ctx->text_height = microui_impl_ege_text_height;
-
-	ege::setbkmode(TRANSPARENT, src_rect);
-	ege::setfontbkcolor(ege::BLACK, src_rect);
-
-	//ege::getimage(textures, "IMAGE", "IDR_IMAGE1");
-	//ege::getimage(textures, "textures.jpg");
-
 }
 
 static mu_Vec2 real_pos(int px, int py) {
@@ -155,10 +144,8 @@ static mu_Vec2 real_pos(int px, int py) {
 
 static void r_draw_rect(mu_Rect rect, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(rect.x, rect.y);
-	ege::resize(src_rect, rect.w, rect.h);
-	ege::setbkcolor_f(EGERGB(color.r, color.g, color.b), src_rect);
-	ege::cleardevice(src_rect);
-	ege::putimage_alphablend(NULL, src_rect, r_pos.x, r_pos.y, color.a);
+	ege::setfillcolor(EGERGBA(color.r, color.g, color.b, color.a), nullptr);
+	ege::ege_fillrect(r_pos.x, r_pos.y, rect.w, rect.h, nullptr);
 }
 
 static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
@@ -168,19 +155,9 @@ static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	//ege::outtextxy(r_pos.x, r_pos.y, gbkbuf);
 
 	if (*text) { //宽度为0时bug
-		const ege::color_t textcolor = EGERGB(color.r, color.g, color.b);
-		const ege::color_t textbkcolor = ((textcolor == ege::BLACK) ? (ege::BLACK + 1) : ege::BLACK);
-		ege::resize(
-		    src_rect,
-		    microui_impl_ege_text_width(nullptr, text, strlen(text)),
-		    microui_impl_ege_text_height(nullptr)
-		);
-		ege::setbkcolor_f(textbkcolor, src_rect);
-		ege::cleardevice(src_rect);
-		ege::setcolor(textcolor, src_rect);
-		ege::outtext(gbkbuf, src_rect);
-		ege::putimage_alphatransparent(NULL, src_rect, r_pos.x, r_pos.y, textbkcolor, color.a);
-		//ege::putimage_transparent(NULL, r_pos.x, r_pos.y, src_rect);
+		const ege::color_t textcolor = EGERGBA(color.r, color.g, color.b, color.a);
+		ege::setcolor(textcolor);
+		ege::ege_drawtext(text, r_pos.x, r_pos.y);
 	}
 }
 
@@ -189,21 +166,17 @@ static void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
 	const mu_Rect tex_src = atlas[id];
 	const int px = r_pos.x + (rect.w - tex_src.w) / 2;
 	const int py = r_pos.y + (rect.h - tex_src.h) / 2;
-	const float dst_alpha = color.a / 255.0f;
 	const ege::color_t base_color = EGERGB(color.r, color.g, color.b);
 
-	// 在src_rect上绘制ICON
-	ege::resize(src_rect, tex_src.w, tex_src.h);
 	for (int y = 0; y < tex_src.h; ++y) {
 		const unsigned char* tex_pix = atlas_texture + (tex_src.y + y) * ATLAS_WIDTH + tex_src.x;
 		for (int x = 0; x < tex_src.w; ++x) {
-			const unsigned char alpha = *tex_pix * dst_alpha;
-			ege::putpixel_f(x, y, EGECOLORA(base_color, alpha), src_rect);
+			const unsigned char alpha = unsigned(*tex_pix) * color.a / 255;
+			ege::putpixel_withalpha(px + x, py + y, EGECOLORA(base_color, alpha));
 			++tex_pix;
 		}
 	}
 
-	ege::putimage_withalpha(NULL, src_rect, px, py);
 }
 
 static void r_set_clip_rect(mu_Rect rect) {
@@ -226,7 +199,7 @@ void microui_impl_ege_draw_data(mu_Context *ctx) {
 
 
 void microui_impl_ege_shutdown() {
-	ege::delimage(src_rect);
+
 }
 
 static int ege2mu_key_map(int key) {
