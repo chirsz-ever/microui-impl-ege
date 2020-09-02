@@ -1,6 +1,7 @@
 #include <ege.h>
 #include <assert.h>
 #include <cstdio>
+#include <string>
 #include "microui_impl_ege.h"
 
 #define ATLAS_WIDTH    41
@@ -81,10 +82,8 @@ const mu_Rect atlas[] = {
 
 const size_t INPUTBUFSIZE = 128;
 
-static char gbkbuf[INPUTBUFSIZE * 3];
-
 static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[INPUTBUFSIZE];
+	wchar_t wcbuf[INPUTBUFSIZE];
 	int wclen = ::MultiByteToWideChar(CP_ACP, 0, ansistr, len, wcbuf, INPUTBUFSIZE);
 	wcbuf[wclen] = '\0';
 	int clen = ::WideCharToMultiByte(CP_UTF8, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
@@ -92,20 +91,16 @@ static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsiz
 	return dest;
 }
 
-static char* utf82ansi(const char u8str[], int len, char dest[], size_t bufsize) {
-	static wchar_t wcbuf[512];
-	if (len < 0)
-		len = strlen(u8str);
-	int wclen = ::MultiByteToWideChar(CP_UTF8, 0, u8str, len, wcbuf, 512);
-	wcbuf[wclen] = '\0';
-	int clen = ::WideCharToMultiByte(CP_ACP, 0, wcbuf, wclen, dest, bufsize, NULL, NULL);
-	dest[clen] = '\0';
-	return dest;
+static std::wstring utf82utf16(const char u8str[], int len) {
+	int bufsize = MultiByteToWideChar(CP_UTF8, 0, u8str, -1, NULL, 0);
+	std::wstring wStr(bufsize, UNICODE_NULL);
+	MultiByteToWideChar(CP_UTF8, 0, u8str, -1, &wStr[0], bufsize);
+	return wStr;
 }
 
 static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
 	if (len == -1) { len = strlen(text); }
-	return ege::textwidth(utf82ansi(text, len, gbkbuf, sizeof(gbkbuf)));
+	return ege::textwidth(utf82utf16(text, len).c_str());
 }
 
 
@@ -150,14 +145,12 @@ static void r_draw_rect(mu_Rect rect, mu_Color color) {
 
 static void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 	mu_Vec2 r_pos = real_pos(pos.x, pos.y);
-	utf82ansi(text, -1, gbkbuf, sizeof(gbkbuf));
-	//ege::setcolor(EGERGB(color.r, color.g, color.b));
-	//ege::outtextxy(r_pos.x, r_pos.y, gbkbuf);
+	const std::wstring& outtext = utf82utf16(text, -1);
 
 	if (*text) { //宽度为0时bug
 		const ege::color_t textcolor = EGERGBA(color.r, color.g, color.b, color.a);
 		ege::setcolor(textcolor);
-		ege::ege_drawtext(text, r_pos.x, r_pos.y);
+		ege::ege_drawtext(outtext.c_str(), r_pos.x, r_pos.y);
 	}
 }
 
