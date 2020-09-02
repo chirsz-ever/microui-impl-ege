@@ -92,9 +92,9 @@ static char* ansi2utf8(const char ansistr[], int len, char dest[], size_t bufsiz
 }
 
 static std::wstring utf82utf16(const char u8str[], int len) {
-	int bufsize = MultiByteToWideChar(CP_UTF8, 0, u8str, -1, NULL, 0);
+	int bufsize = MultiByteToWideChar(CP_UTF8, 0, u8str, len, NULL, 0);
 	std::wstring wStr(bufsize, UNICODE_NULL);
-	MultiByteToWideChar(CP_UTF8, 0, u8str, -1, &wStr[0], bufsize);
+	MultiByteToWideChar(CP_UTF8, 0, u8str, len, &wStr[0], bufsize);
 	return wStr;
 }
 
