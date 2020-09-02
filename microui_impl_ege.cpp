@@ -102,8 +102,7 @@ static std::wstring utf82utf16(const char u8str[], int len) {
 
 static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
 	Gdiplus::Graphics graphics(ege::getHDC());
-	Gdiplus::Font gfont(ege::getHDC());
-	Gdiplus::StringFormat stringFormat;
+	Gdiplus::StringFormat stringFormat(Gdiplus::StringFormatFlagsMeasureTrailingSpaces);
 	Gdiplus::RectF boundingBox;
 	Gdiplus::SizeF boundingBoxSize;
 	const std::wstring& outtext = utf82utf16(text, len);
