@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <cstdio>
 #include <string>
+#include <cmath>
+#include <gdiplus.h>
 #include "microui_impl_ege.h"
 
 #define ATLAS_WIDTH    41
@@ -99,13 +101,28 @@ static std::wstring utf82utf16(const char u8str[], int len) {
 }
 
 static int microui_impl_ege_text_width(mu_Font font, const char *text, int len) {
-	if (len == -1) { len = strlen(text); }
-	return ege::textwidth(utf82utf16(text, len).c_str());
+	Gdiplus::Graphics graphics(ege::getHDC());
+	Gdiplus::Font gfont(ege::getHDC());
+	Gdiplus::StringFormat stringFormat;
+	Gdiplus::RectF boundingBox;
+	Gdiplus::SizeF boundingBoxSize;
+	const std::wstring& outtext = utf82utf16(text, len);
+	graphics.MeasureString(
+		outtext.c_str(),
+		-1,
+		&gfont,
+		Gdiplus::PointF(),
+		&stringFormat,
+		&boundingBox
+	);
+	boundingBox.GetSize(&boundingBoxSize);
+	return round(boundingBoxSize.Width);
 }
 
 
 static int microui_impl_ege_text_height(mu_Font font) {
-	return ege::textheight(' ');
+	Gdiplus::Font gfont(ege::getHDC());
+	return gfont.GetHeight(::GetDeviceCaps(ege::getHDC(), LOGPIXELSY));
 }
 
 void microui_impl_ege_init(mu_Context *ctx) {
